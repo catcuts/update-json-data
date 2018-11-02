@@ -1,0 +1,22 @@
+{
+  "name": "update-json-data",
+  "version": "1.0.2",
+  "description": "update json in an extended way",
+  "keywords": [
+    "json"
+  ],
+  "repository": {
+    "type" : "git",
+    "url" : "https://github.com/catcuts/update-json-data.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "catcuts",
+  "license": "ISC",
+  "dependencies": {
+    "jsonpath": "^1.0.0",
+    "merge-deep": "^3.0.2"
+  }
+}
