@@ -1,6 +1,8 @@
 
 # Update Json Data by Extended Json Path
 
+Get started: `npm i update-json-data`
+
 ## 1. Updating The non-Object and non-Array
 
 Suppose we have the original data:
