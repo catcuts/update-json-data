@@ -290,7 +290,7 @@ var testGroups = [
         },
 
         submittedData: {
-            "$.children[?(@.name=='A')].+children": "$.children[?(@.name=='B')].-children[?(@.name=='b3')]"
+            "$.children[?(@.name=='A')].+children": "$.children[?(@.name=='B')].-children[2]"
         },
 
         // this is the updated tree data

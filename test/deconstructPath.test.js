@@ -1,8 +1,29 @@
 const deconstructPath = require("../deconstructPath")
 const assert = require("assert")
-const util = require("util")
 
 var testGroups = [
+    {
+        enabled: true,
+        originalData: "",
+        submittedData: "$.children[?(@.name=='B')].+children[?(@.name=='b3')]",
+        expectedData: {
+            parentPath: "$.children[?(@.name=='B')]",
+            targetPath: "children[?(@.name=='b3')]",
+            targetPos: "+",
+            targetOperator: "+"
+        }
+    },
+    {
+        enabled: true,
+        originalData: "",
+        submittedData: "$.children[?(@.name=='B')].+children[2]",
+        expectedData: {
+            parentPath: "$.children[?(@.name=='B')]",
+            targetPath: "children",
+            targetPos: "2",
+            targetOperator: "+"
+        }
+    },
     {
         enabled: true,
         originalData: "",
@@ -41,10 +62,21 @@ var testGroups = [
         originalData: "",
         submittedData: "abc",
         expectedData: {
-            parentPath: "abc",
-            targetPath: "",
+            parentPath: "$",
+            targetPath: "abc",
             targetPos: "",
             targetOperator: ""
+        }
+    },
+    {
+        enabled: true,
+        originalData: "",
+        submittedData: "+a1[1]",
+        expectedData: {
+            parentPath: "$",
+            targetPath: "a1",
+            targetPos: "1",
+            targetOperator: "+"
         }
     },
 
@@ -52,46 +84,17 @@ var testGroups = [
 
 var resultData
 
-function isEqual(a, b) {
-    if (util.isObject(a) && util.isObject(b)) {
-        let aKeys = Object.keys(a)
-        let bKeys = Object.keys(b)
-        if (aKeys.length === bKeys.length) {
-            for (let ak of aKeys) {
-                if (b.hasOwnProperty(ak) && isEqual(a[ak], b[ak])) {
-                    continue
-                } else {
-                    return false
-                }
-            }
-            return true
-        } else {
-            return false
-        }
-    } else if (util.isArray(a) && util.isArray(b)) {
-        if (a.length === b.length) {
-            for (let ai in a) {
-                if (isEqual(a[ai], b[ai])) {
-                    continue
-                } else {
-                    return false
-                }
-            }
-            return true
-        } else {
-            return false
-        }
-    } else {
-        return a === b
-    }
-}
-
 describe("deconstructPath", () => {
     for (let n = 0; n <= testGroups.length - 1; n++) {
         if (!testGroups[n].enabled) continue
         it(`#group${n+1}`, () => {
             resultData = deconstructPath(testGroups[n].submittedData)
-            assert.equal(true, isEqual(resultData, testGroups[n].expectedData))
+            Object.getOwnPropertyNames(resultData).forEach(k => {
+                let expectedData = testGroups[n].expectedData
+                if (expectedData.hasOwnProperty(k)) {
+                    assert.equal(resultData[k], expectedData[k])
+                }
+            })
         })
     }
 })

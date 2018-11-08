@@ -13,7 +13,7 @@ function deconstructPath(path) {
     //                                 t
     //                                  o
     //                                   r
-    let parentPath = path, targetPath = "", targetPos = "", targetOperator = ""
+    let parentPath = "$", targetPath = path, targetPos = "", targetOperator = ""
     if (util.isString(path)) {
         let reversedPath = path.split("").reverse()
         // first find the right dot to split
@@ -27,18 +27,16 @@ function deconstructPath(path) {
             }
         }
 
-        if (targetPath) {
-            // get the operator
-            targetOperator = targetPath.startsWith("+") ? "+" : (targetPath.startsWith("-") ? "-" : "")
-            if (targetOperator) {
-                targetPos = (targetPath.match(/\[(\d+)\]$/) || ["0", targetOperator])[1]
-                // trim off the [targetPos] by replace
-                // and pick off the targetPos by slice
-                targetPath = targetPath.replace(new RegExp(`\\[${targetPos}\\]$`), "").slice(1)
-                // trim the brackets on the beginning and end position
-                if (/^\(.+\)$/.test(targetPath)) {
-                    targetPath = targetPath.slice(1, targetPath.length - 1)
-                }
+        // get the operator
+        targetOperator = targetPath.startsWith("+") ? "+" : (targetPath.startsWith("-") ? "-" : "")
+        if (targetOperator) {
+            targetPos = (targetPath.match(/\[(\w+)\]$/) || ["0", targetOperator])[1]
+            // trim off the [targetPos] by replace
+            // and pick off the targetPos by slice
+            targetPath = targetPath.replace(new RegExp(`\\[${targetPos}\\]$`), "").slice(1)
+            // trim the brackets on the beginning and end position
+            if (/^\(.+\)$/.test(targetPath)) {
+                targetPath = targetPath.slice(1, targetPath.length - 1)
             }
         }
     }

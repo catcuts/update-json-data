@@ -97,15 +97,16 @@ function sub(a, b, n, offset=0, check=true) {  // a <- b is for check
             }
         }
     } else {
+        let allowed = true
         if (Array.isArray(a)) {
             n = str2int(n, {fallback: a.length}) + offset
             // note: n is counted from 0
             if (n > a.length - 1) return false
-            if (check || isEqual(a[n], b)) {
-                return a.splice(n, 1)
-            }  // else ignore
+            if (check) if (!isEqual(a[n], b)) allowed = false
+            if (allowed) return a.splice(n, 1)
         } else if (util.isObject(a)) {
-            if (check || isEqual(a[n], b)) {
+            if (check) if (!isEqual(a[n], b)) allowed = false
+            if (allowed) {
                 let r = a[n]
                 delete a[n]
                 return [r]
@@ -116,10 +117,16 @@ function sub(a, b, n, offset=0, check=true) {  // a <- b is for check
 
 function getValueWithDecorator(data, path) {
      if (util.isString(path) && path.startsWith("$.")) {
+        let results = []
+
         let {parentPath, targetPath, targetPos, targetOperator} = deconstructPath(path)
 
         if (targetOperator === "-") {
-            return sub(jsonpath.query(data, path), "ignore checking", targetPos, 0, false)
+            let queries = jsonpath.query(data, `${parentPath}.${targetPath}`)
+            queries.forEach(r => {
+                results.push(...sub(r, {[targetPos]: ""}, targetPos, 0, false))
+            })
+            return results
         } else {
             return jsonpath.query(data, path)
         }
