@@ -1,4 +1,4 @@
-const updateJson = require("update-json-data")
+const updateJson = require("../updateJson")
 const assert = require("assert")
 const util = require("util")
 
@@ -127,7 +127,7 @@ var testGroups = [
         }
     },
 
-    // json path
+    // json path field
     {
         enabled: true,
         originalData: {
@@ -250,6 +250,85 @@ var testGroups = [
             }
         }
     },
+
+    // json path value
+    {
+        enabled: true,
+
+        // suppose this is a tree data (original)
+        // T
+        // |——A
+        // |  |——a1
+        // |  |——a2
+        // |  |——a3
+        // |
+        // |——B
+        // |  |——b1
+        // |  |——b2
+        // |  |——b3
+        // |
+        originalData: {
+          "name": "T",
+          "children": [
+              {
+                  "name": "A",
+                  "children": [
+                      {"name": "a1"},
+                      {"name": "a2"},
+                      {"name": "a3"}
+                  ]
+              },
+              {
+                  "name": "B",
+                  "children": [
+                      {"name": "b1"},
+                      {"name": "b2"},
+                      {"name": "b3"}
+                  ]
+              }
+          ]
+        },
+
+        submittedData: {
+            "$.children[?(@.name=='A')].+children": "$.children[?(@.name=='B')].-children[2]"
+        },
+
+        // this is the updated tree data
+        // T
+        // |——A
+        // |  |——a1
+        // |  |——a2
+        // |  |——a3
+        // |  |——b3
+        // |
+        // |——B
+        // |  |——b1
+        // |  |——b2
+        // |
+
+        expectedData: {
+          "name": "T",
+          "children": [
+              {
+                  "name": "A",
+                  "children": [
+                      {"name": "a1"},
+                      {"name": "a2"},
+                      {"name": "a3"},
+                      {"name": "b3"}
+                  ]
+              },
+              {
+                  "name": "B",
+                  "children": [
+                      {"name": "b1"},
+                      {"name": "b2"}
+                  ]
+              }
+          ]
+        }
+    },
+
 ]
 
 var resultData

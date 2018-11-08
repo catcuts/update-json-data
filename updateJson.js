@@ -1,6 +1,7 @@
 const deepMerge = require("merge-deep")
 const jsonpath = require("jsonpath")
 const util = require("util")
+const deconstructPath = require("./deconstructPath")
 
 function str2int(str, {min=0, fallback=0}={}) {
     if (/^[+-]*\d+$/.test(str)) {  // 如果为数字或数字字符串
@@ -72,52 +73,76 @@ function add(a, b, n) {  // a <- b
     return a
 }
 
-function sub(a, b, n, offset=0) {  // a <- b is for check
+function sub(a, b, n, offset=0, check=true) {  // a <- b is for check
     if (n === "-") {
         if (!util.isObject(b)) return false
+        let removedEles = []
         if (Array.isArray(a)) {
             let refPoint = a.length - 1
             let _offset = 0
             for (let bk in b) {
                 bk = str2int(bk, {fallback: "notInteger"})
                 if (bk === "notInteger") continue
-                _offset = sub(a, b[bk], bk, bk > refPoint ? _offset : 0) ? (_offset - 1) : _offset
+                let _removedEles = sub(a, b[bk], bk, bk > refPoint ? _offset : 0)
+                if (_removedEles.length) {
+                    _offset -= 1
+                    removedEles.push(..._removedEles)
+                }
+                // _offset = removedEles.length ? (_offset - 1) : _offset
                 refPoint = bk
             }
         } else {
             for (let bk in b) {
-                sub(a, b[bk], bk)
+                removedEles.push(...sub(a, b[bk], bk))
             }
         }
     } else {
+        let allowed = true
         if (Array.isArray(a)) {
             n = str2int(n, {fallback: a.length}) + offset
             // note: n is counted from 0
             if (n > a.length - 1) return false
-            if (isEqual(a[n], b)) {
-                return a.splice(n, 1).length
-            }  // else ignore
+            if (check) if (!isEqual(a[n], b)) allowed = false
+            if (allowed) return a.splice(n, 1)
         } else if (util.isObject(a)) {
-            if (isEqual(a[n], b)) {
-                return delete a[n]
+            if (check) if (!isEqual(a[n], b)) allowed = false
+            if (allowed) {
+                let r = a[n]
+                delete a[n]
+                return [r]
             }  // else ignore
         }
     }
 }
 
-function updateDataWithDecorator(targetParent, targetName, targetValue) {
+function getValueWithDecorator(data, path) {
+     if (util.isString(path) && path.startsWith("$.")) {
+        let results = []
+
+        let {parentPath, targetPath, targetPos, targetOperator} = deconstructPath(path)
+
+        if (targetOperator === "-") {
+            let queries = jsonpath.query(data, `${parentPath}.${targetPath}`)
+            queries.forEach(r => {
+                results.push(...sub(r, {[targetPos]: ""}, targetPos, 0, false))
+            })
+            return results
+        } else {
+            return jsonpath.query(data, path)
+        }
+
+    } else {  // or path is value itself
+        return path
+    }
+}
+
+function updateDataWithDecorator(targetParent, targetName, targetPos, targetOperator, targetValue) {
     // what is decorator —— prefix and suffix
     // note: targetParent not object type results no effect and no error
-    let plus = targetName.startsWith("+") ? "+" : false
-    let minu = targetName.startsWith("-") ? "-" : false
-    if (plus || minu) {
-        var targetPos = (targetName.match(/\[(.+)]$/) || ["0", plus || minu])[1]
-        targetName = targetName.replace(`[${targetPos}]`, "").slice(1)
-    }
-    if (plus) {
+    if (targetOperator === "+") {
         targetParent[targetName] = add(targetParent[targetName], targetValue, targetPos)
-    } else if (minu) {
-        sub(targetParent[targetName], targetValue, targetPos)
+    } else if (targetOperator === "-") {
+        return sub(targetParent[targetName], targetValue, targetPos)
     } else if (targetParent.hasOwnProperty(targetName)) {
         targetParent[targetName] = merge(targetParent[targetName], targetValue)
     }
@@ -129,29 +154,32 @@ function updateJson(data, pathData) {
     // suffix is picked from [n]
     // data is considered to be object type, here we don't apply parameter check
     for (let fieldPath in pathData) {
-        if (fieldPath.startsWith("$")) {
+        // eg.:
+        // pathData: {
+        //             "$.children[?(@.name=='A')].+children[2]": "$.children[?(@.name=='B')].-children[?(@.name=='b3')]"
+        //         },
+        // fieldPath = "$.children[?(@.name=='A')].+children[2]"
 
-            let targetParent = jsonpath.query(data, fieldPath.replace(/\.[^.]*$/, ""))  // a.b.c.d.e -> a
+        let {parentPath, targetPath, targetPos, targetOperator} = deconstructPath(fieldPath)
+        // parentPath = "$.children[?(@.name=='A')]"
+        // targetPath = "children"
+        // targetPos = "2"
+        // targetOperator = "+"
 
-            if (!Array.isArray(targetParent)) {
-                targetParent = [targetParent]
-            }
+        let targetParent = jsonpath.query(data, parentPath)  // a.b.c.d.e -> a.b.c.d
 
-            targetParent.forEach(tp => {
-                // if (!util.isObject(targetParent)) continue
-                // ↑ no necessary to check if targetParent is object type
-                // because nonObject['anyPropName'] = 'anyValue' results nothing
-                // so does nonObject.anyPropName = 'anyValue'
-                // and nonObject.notExistedPropName gets undefined but not error
+        let targetValuePath = pathData[fieldPath]
+        // targetValuePath = "$.children[?(@.name=='B')].-children[?(@.name=='b3')]"
 
-                let targetName = fieldPath.replace(/^.*\./, "")  // a.b.c.d.e -> e
+        let targetValue = getValueWithDecorator(data, targetValuePath)
 
-                updateDataWithDecorator(tp, targetName, pathData[fieldPath])
-            })
-
-        } else {
-            updateDataWithDecorator(data, fieldPath, pathData[fieldPath])
+        if (!Array.isArray(targetParent)) {
+            targetParent = [targetParent]
         }
+
+        targetParent.forEach(tp => {
+            updateDataWithDecorator(tp, targetPath, targetPos, targetOperator, targetValue)
+        })
     }
     return data
 }
