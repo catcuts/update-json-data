@@ -1,6 +1,6 @@
 {
   "name": "update-json-data",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "update json in an extended way",
   "keywords": [
     "json"
@@ -20,6 +20,7 @@
     "merge-deep": "^3.0.2"
   },
   "devDependencies": {
+    "markdown-toc": "^1.2.0",
     "mocha": "^5.2.0"
   }
 }

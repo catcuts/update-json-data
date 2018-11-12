@@ -1,7 +1,13 @@
-
 # Update Json Data by Extended Json Path
 
 Get started: `npm i update-json-data`
+
+- [Update Json Data by Extended Json Path](#update-json-data-by-extended-json-path)
+    - [1. Updating The non-Object and non-Array](#1-updating-the-non-object-and-non-array)
+    - [2. Updating The Array (simple)](#2-updating-the-array-simple)
+    - [3. Updating The Array (complicated)](#3-updating-the-array-complicated)
+    - [4. Updating via JsonPath](#4-updating-via-jsonpath)
+    - [5. Updating Tree Data](#5-updating-tree-data)
 
 ## 1. Updating The non-Object and non-Array
 
@@ -229,5 +235,89 @@ expectedData: {
             ]
         }
     }
+}
+```
+
+## 5. Updating Tree Data
+
+Suppose we have a tree defined by below data:
+
+```js
+// T
+// |——A
+// |  |——a1
+// |  |——a2
+// |  |——a3
+// |
+// |——B
+// |  |——b1
+// |  |——b2
+// |  |——b3
+// |
+originalData: {
+    "name": "T",
+    "children": [
+        {
+            "name": "A",
+            "children": [
+                {"name": "a1"},
+                {"name": "a2"},
+                {"name": "a3"}
+            ]
+        },
+        {
+            "name": "B",
+            "children": [
+                {"name": "b1"},
+                {"name": "b2"},
+                {"name": "b3"}
+            ]
+        }
+    ]
+}
+```
+
+What we want to apply on this tres is:
+
+- Move node B-b3 to A-a2's next
+
+To achieve this, prepare the submitted data:
+
+```js
+submittedData: {
+    // note: currently we don't support:
+    // "$.children[?(@.name=='A')].+children[?(@.name=='a2')": "$.children[?(@.name=='B')].-children[?(@.name=='b3')"
+    "$.children[?(@.name=='A')].+children[1]": "$.children[?(@.name=='B')].-children[2]"
+    //                          ^         ^                                ^         ^
+    //                         note1     note2                            note3     note4
+    // note4: remove children[2]
+    // note1: and then add to after children[1]
+    // note2 and note3: the last index need to be pre-calculated
+}
+```
+
+Then we got the expected data:
+
+```js
+expectedData: {
+    "name": "T",
+    "children": [
+        {
+            "name": "A",
+            "children": [
+                {"name": "a1"},
+                {"name": "a2"},
+                {"name": "a3"},
+                {"name": "b3"}
+            ]
+        },
+        {
+            "name": "B",
+            "children": [
+                {"name": "b1"},
+                {"name": "b2"}
+            ]
+        }
+    ]
 }
 ```
