@@ -204,6 +204,14 @@ What we want to apply on "$.x.y.a1" is: (index is counted from 0)
 
 To achieve this, prepare the submitted data:
 
+NOTE:
+
+for key-value like `"$.x.y.±a1[1]": "onPos1AddedAValue"`, there are alternatives as below:
+
+- `"±$.x.y.a1[1]": "onPos1AddedAValue"`
+
+which moves the operator '+' or '-' to the very left.
+
 ```js
 submittedData: {
     "$.x.y.+a1[1]": "onPos1AddedAValue",
