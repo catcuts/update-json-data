@@ -4,6 +4,11 @@ function deconstructPath(path) {
     // $.children[?(@.name=='B')].±children[?(@.name=='b3')][n]       -> pos=n
     // $.children[?(@.name=='B')].±(children[?(@.name=='b3')][n])     -> pos=_
     // $.children[?(@.name=='B')].±(children[?(@.name=='b3')][n])[m]  -> pos=m
+    //
+    // ±$.children[?(@.name=='B')].children[?(@.name=='b3')][n]       -> pos=n
+    // ±$.children[?(@.name=='B')].(children[?(@.name=='b3')][n])     -> pos=_
+    // ±$.children[?(@.name=='B')].(children[?(@.name=='b3')][n])[m]  -> pos=m
+    //
     // —————————————————————————— — ——————————————————————— ——
     //        parentPath          o        targetPath       targetPos
     //                             p
@@ -27,18 +32,39 @@ function deconstructPath(path) {
             }
         }
 
-        // get the operator
-        targetOperator = targetPath.startsWith("+") ? "+" : (targetPath.startsWith("-") ? "-" : "")
-        if (targetOperator) {
-            targetPos = (targetPath.match(/\[(\w+)\]$/) || ["0", targetOperator])[1]
-            // trim off the [targetPos] by replace
-            // and pick off the targetPos by slice
-            targetPath = targetPath.replace(new RegExp(`\\[${targetPos}\\]$`), "").slice(1)
-            // trim the brackets on the beginning and end position
-            if (/^\(.+\)$/.test(targetPath)) {
-                targetPath = targetPath.slice(1, targetPath.length - 1)
-            }
+        // for the left part
+
+        // get the left operator
+        let leftOperator = parentPath.startsWith("+") ? "+" : (parentPath.startsWith("-") ? "-" : "")
+        if (leftOperator) {
+            parentPath = parentPath.slice(1)
         }
+
+        // for the right part
+
+        // get the right operator
+        let rightOperator = targetPath.startsWith("+") ? "+" : (targetPath.startsWith("-") ? "-" : "")
+
+        // get the position
+        targetPos = (targetPath.match(/\[(\w+)\]$/) || ["0", leftOperator || rightOperator])[1]
+
+        // trim off the [targetPos] by replace
+        // and pick off the targetPos by slice
+        targetPath = targetPath.replace(new RegExp(`\\[${targetPos}\\]$`), "")
+
+        // pick off operator
+        if (rightOperator) {
+            targetPath = targetPath.slice(1)
+        }
+
+        // trim the brackets on the beginning and end position
+        if (/^\(.+\)$/.test(targetPath)) {
+            targetPath = targetPath.slice(1, targetPath.length - 1)
+        }
+
+        // final operator
+        targetOperator = leftOperator || rightOperator
+
     }
     return {parentPath, targetPath, targetPos, targetOperator}
 }
