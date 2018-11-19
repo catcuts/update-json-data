@@ -224,6 +224,22 @@ submittedData: {
         1: 2
     }
 }
+
+// OR
+submittedData: {
+//   operator to the very left
+//   v    
+    "+$.x.y.a1[1]": "onPos1AddedAValue",
+    "+$.x.y.a1[2]": ["onPos2AddedAValue", 123, true],
+    "-$.x.y.a1[6]": "av3",
+    "+$.x.y.a1": "addedValue123",
+    "-$.x.y.a1": {  // note: object has no order
+        4: 123,
+        0: true,
+        1: 2
+    }
+}
+
 ```
 
 Then we got the expected data:
@@ -301,6 +317,13 @@ submittedData: {
     // note4: remove children[2]
     // note1: and then add to after children[1]
     // note2 and note3: the last index need to be pre-calculated
+}
+
+// OR
+submittedData: {
+//   operator to the very left                  operator to the very left
+//   v                                          v
+    "+$.children[?(@.name=='A')].children[1]": "-$.children[?(@.name=='B')].children[2]"
 }
 ```
 
